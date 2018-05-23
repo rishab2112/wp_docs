@@ -1,0 +1,55 @@
+// Add Hook
+add_action( 'add_meta_boxes', 'our_solutions_fields' );
+add_action( 'save_post', 'our_solutions_fields_save' );
+
+// Function for Register Field
+function our_solutions_fields(){
+
+    add_meta_box(
+      'our_soluions',       // ID
+      'Details',            // Title
+      'our_soluions_html'  // Callback Func
+    );
+
+}
+
+function our_soluions_html( $post ){ ?>
+
+  <?php
+    // Get Already Save Value
+    $name = get_post_meta( $post->ID, 'soluction_name' , true);
+  ?>
+
+<!-- Meta Name Input -->
+  <div>
+    <label for="solutions_meta_name">Meta Name</label>
+    <input type="text" name="solutions_meta_name" value="<?php echo $name; ?>">
+  </div>
+
+<!-- Editor -->
+  <?php
+  
+    $content = '';
+    $editor_id = 'solutions_content';
+    $settings = array(
+      'textarea_rows'     =>  8,
+      'media_buttons'      =>  false,
+    );
+
+    wp_editor( $content, $editor_id, $settings );
+  
+  ?>
+
+  <?php 
+}
+
+
+function our_solutions_fields_save_fields( $post_id ){
+
+  if ( isset($_POST['solutions_meta_name'])) {
+    $name = sanitize_text_field( $_POST['solutions_meta_name'] );
+ 
+    update_post_meta($post_id, 'soluction_name', $_POST['solutions_meta_name']);
+  }
+
+}

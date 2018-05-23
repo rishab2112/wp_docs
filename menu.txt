@@ -1,0 +1,15 @@
+// Create Action
+add_action( 'after_setup_theme', 'register_menus' );
+
+
+// Register Menu
+register_nav_menu( 'primary', __( 'Primary Menu', 'main-menu' ) );
+
+
+<!-- Display Menu -->
+<?php wp_nav_menu(array(
+	'theme_location'			=>	'primary',
+	'menu_class'				=>	'menu_item',
+	'before'					=>	'<>',
+	'after'						=>	'</>',
+)); ?>

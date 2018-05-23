@@ -1,0 +1,46 @@
+// Add Hook
+add_action( 'add_meta_boxes', 'menu_list' );
+add_action( 'save_post', 'menu_list_save' );
+
+// Function for Register Field
+function menu_list(){
+
+    add_meta_box(
+      'menu_list',       // ID
+      'Menu',            // Title
+      'menu_list_html'  // Callback Func
+    );
+
+}
+
+function menu_list_html( $post ){ ?>
+
+  <?php
+    // Get Already Save Value
+    $name = get_post_meta( $post->ID, 'menu_name' , true);
+
+    $menus = get_terms('nav_menu');
+    echo '<select name="menu_name">';
+    	foreach ($menus as $each_menu) {
+    		$selected = "";
+    		
+    		if($each_menu->name == $name)
+    			$selected = ' selected="selected"';
+
+    		echo '<option value="'.$each_menu->term_id.'" '.$selected.'>'.$each_menu->name.'</option>';
+    	}
+    echo '</select>';
+
+  ?>
+
+  <?php 
+}
+
+
+function menu_list_save( $post_id ){
+
+  if ( isset($_POST['menu_name'])) {
+    update_post_meta($post_id, 'menu_name', $_POST['menu_name']);
+  }
+
+}

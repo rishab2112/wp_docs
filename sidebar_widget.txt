@@ -1,0 +1,24 @@
+//Hook Sidebar
+
+add_action( 'widgets_init', 'initilize_widget' );
+
+
+---------------------------------------------------------------------------------------------
+
+// Function
+
+function initilize_widget(){
+	register_sidebar(array(
+		'name' => __( 'Sidebar', 'sidebar-1' ),
+        'id' => 'main-sidebar',
+		'before_title'  => '<h2>',
+		'after_title'   => '</h2>',
+	));
+}
+
+
+<?php if ( is_active_sidebar( 'sidebar-1' ) ) : ?>
+    <div id="secondary" class="widget-area" role="complementary">
+    <?php dynamic_sidebar( 'sidebar-1' ); ?>
+    </div>
+<?php endif; ?>

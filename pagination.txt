@@ -1,0 +1,9 @@
+pagination:
+
+$paged = ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : 1;
+
+$output .= ' <ul class="pagination pull-right">';
+                $output .= '<li>'.get_previous_posts_link( '<i class="icon icon-chevron-left"></i> Previous Page' ).'</li>';
+
+        $output .= ' <li>'.get_next_posts_link( 'Next Page <i class="icon icon-chevron-right"></i> ', $andrew_query->max_num_pages ).'</li>';
+    $output .= ' </ul>  ';

@@ -1,0 +1,24 @@
+1.
+
+// Include Style Sheet Function
+include get_template_directory() . '/includes/front/enqueue.php';
+
+-----------------------------------------------------------------
+
+2.
+
+// Actions & Filters Hooks
+add_action( 'wp_enqueue_scripts' , 'enqueue_styles' );
+
+-----------------------------------------------------------------
+
+3.
+
+// Create enqueue_styles Functions
+function enqueue_styles(){
+	// Register Style Sheets
+	wp_register_style( 'styles', get_template_directory_uri()."/style.css" );
+
+	// Enqueue Style Sheet
+	wp_enqueue_style( 'styles' );
+}

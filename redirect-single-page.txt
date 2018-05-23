@@ -1,0 +1,1 @@
+Redirect 301 /author/admin/ http://organicfresh.com.sg/

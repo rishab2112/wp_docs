@@ -1,0 +1,11 @@
+// Setup In Function.php
+add_theme_support( 'post-thumbnails' );
+
+
+<?php
+
+if( have_post_thumbnail() ){
+	the_post_thumbnail();	
+}
+
+?>

@@ -1,0 +1,46 @@
+// Add Hook
+
+add_action( 'init', 'our_solutions' );
+
+============================================================================================================
+
+//Function
+
+function our_solutions(){
+	$labels = array(
+    'name' => _x('Solutions', 'post type general name'),
+    'singular_name' => _x('Book', 'post type singular name'),
+    'all_items' => __('All Solutions'),
+  );
+  $args = array(
+    'labels' => $labels,
+    'public' => true,
+    'publicly_queryable' => true,
+    'show_ui' => true, 
+    'show_in_menu' => true, 
+    'query_var' => true,
+    'rewrite' => true,
+    'capability_type' => 'post',
+    'has_archive' => true, 
+    'hierarchical' => false,
+    'menu_icon'           => 'dashicons-cart',
+    'menu_position' => null,
+    'supports' => array( 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'comments' )
+  ); 
+  register_post_type('solutions',$args);
+}
+
+============================================================================================================
+
+// Display
+
+$args = array( 'post_type' => 'Solutions', 'posts_per_page' => 10 );
+$loop = new WP_Query( $args );
+
+while ( $loop->have_posts() ) : $loop->the_post();
+  the_title();
+
+  //echo get_post_meta( get_the_ID(), 'soluction_name', true ); // Meta Tags (Custom Fields)
+
+  the_content();
+endwhile;

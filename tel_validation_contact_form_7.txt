@@ -1,0 +1,1 @@
+[tel* phone minlength:10 maxlength:14  placeholder "PHONE NO *"]

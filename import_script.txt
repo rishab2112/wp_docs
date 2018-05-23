@@ -1,0 +1,26 @@
+1.
+
+// Include Script Function
+include get_template_directory() . '/includes/front/enqueue.php';
+
+-----------------------------------------------------------------
+
+2.
+
+// Actions & Filters Hooks
+add_action( 'wp_enqueue_scripts' , 'enqueue_styles' );
+
+-----------------------------------------------------------------
+
+3.
+
+// Create enqueue_styles Functions
+function enqueue_styles(){
+
+	// Register Script
+	wp_register_script( 'scripts', get_template_directory_uri()."/scripts/script.js" );
+
+	// Enqueue Script
+	wp_enqueue_script( 'scripts' );
+
+}
