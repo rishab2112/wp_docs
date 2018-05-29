@@ -1,0 +1,1 @@
+$term_taxonomy_ids = wp_set_object_terms( get_the_ID(), "honors", 'course_type', true );
