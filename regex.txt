@@ -1,0 +1,2 @@
+  Get only of page by length:
+  ^(?:\b\w+\b[\s\r\n]*){1,350}$
