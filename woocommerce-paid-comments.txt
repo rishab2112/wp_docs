@@ -1,0 +1,492 @@
+function get_comment_list(){
+    return "
+        SELECT * FROM `wp_posts` INNER JOIN `wp_postmeta` ON wp_posts.ID = wp_postmeta.post_id WHERE wp_postmeta.meta_key = 'parent' AND wp_postmeta.meta_value = ".get_the_ID()." AND wp_posts.post_status = 'publish';
+        ";
+}
+function get_all_comment_list(){
+    return "
+        SELECT wp_posts.ID FROM `wp_posts` INNER JOIN `wp_postmeta` ON wp_posts.ID = wp_postmeta.post_id WHERE wp_postmeta.meta_key = 'parent' AND wp_posts.post_status = 'publish';
+        ";
+}
+
+function get_all_comment_list_hide_products(){
+    return "
+        SELECT wp_posts.ID FROM `wp_posts` WHERE wp_posts.post_type = 'product' AND wp_posts.post_status = 'publish';
+        ";
+}
+
+add_action( 'woocommerce_after_single_product_summary', 'bbloomer_custom_action', 5 );
+ 
+function bbloomer_custom_action() {
+    
+    $result = "";
+
+    global $wpdb;
+    $products = $wpdb->get_results( get_comment_list() );
+
+    if ( $products )
+    {
+        $result .= '<form action=""><ul>';
+        foreach ( $products as $each_product )
+        {
+            $title = $each_product->post_title;
+            $content = substr($each_product->post_content, 0, 50);
+            if (strlen($content)>50)
+                $content = $content.'...';
+
+            $sale_price = get_post_meta($each_product->ID, '_sale_price', true);
+            $reg_price = get_post_meta($each_product->ID, '_regular_price', true);
+
+            $result .= '<li>';
+
+            $result .= '<div class="comment_add">';
+                $result .= '<input type="radio" name="comment_radio">';
+                $result .= '<div style="visibility: hidden!important;" class="comment_list_id">'.$each_product->ID.'</div>';
+            $result .= '</div>';
+
+            $result .= '<div class="content_data">';
+
+                $result .= '<h4>'.$title.'</h4>';
+                $result .= '<div class="content_item">'.$content.'</div>';
+
+                if ($sale_price > 0)
+                    $result .= '<div class="price"><del>$ '.$reg_price.'</del><ins>$ '.$sale_price.'<ins></div>';
+                else
+                    $result .= '<div class="price">$ '.$reg_price.'</div>';
+            
+            $result .= '</div>';
+
+            $result .= '</li>';
+        }   
+        $result .= '</ul></form>';
+    }
+    wp_reset_postdata();
+
+    echo '<div id="comment_area">'.$result.'</div>';
+}
+
+function iconic_output_engraving_field() {
+/*    
+    global $wpdb;
+    $products = $wpdb->get_results( get_comment_list() );
+
+    if ( $products )
+    {
+        foreach ( $products as $each_product )
+        {
+            ?>
+            <input type="hidden" id="comment_<?php echo $each_product->ID; ?>" name="comment_<?php echo $each_product->ID; ?>" value="" >
+            <?php
+        }   
+    }
+
+    wp_reset_postdata();
+*/
+    ?>
+    <div class="comments_hidden_data"></div>
+    <?php
+}
+
+add_action( 'woocommerce_before_add_to_cart_button', 'iconic_output_engraving_field', 10 );
+
+//add_action('wp_ajax_nopriv_save_custom_product_field_in_cart', 'save_custom_product_field_in_cart');
+//add_action('wp_ajax_save_custom_product_field_in_cart', 'save_custom_product_field_in_cart');
+
+add_action( 'template_redirect', 'save_custom_product_field_in_cart', 10, 2 );
+function save_custom_product_field_in_cart() {
+    
+    global $woocommerce;
+    global $wpdb;
+
+    $comment_selected = false;
+    foreach ($_POST as $each_field => $each_field_val) {
+        if (preg_match('/comment_/', $each_field))
+            $comment_selected = true;
+    }
+
+    if (!$comment_selected)
+        return;
+
+    wp_reset_postdata();
+
+    foreach ($_POST as $each_field => $each_field_val) {
+        if (preg_match('/comment/', $each_field)) {
+            if ($each_field_val > 0) {
+                $prod_id = str_replace('comment_', '', $each_field);
+                if ($prod_id > 0) {
+                    $woocommerce->cart->add_to_cart( $prod_id, 1 );
+                }
+            }
+        }
+    }
+
+
+}
+
+function footer_script() {
+?>
+<script type="text/javascript">
+  if ( undefined !== window.jQuery ) {
+    // script dependent on jQuery
+    jQuery(document).ready(function(){
+        jQuery('.comment_add').click(function(){
+            var selected = jQuery(this).find('input:radio').val();
+            var id = jQuery(this).find('.comment_list_id').text();
+            if (selected == "on") {
+                //Add to cart
+                jQuery('.comments_hidden_data').html('<input type="hidden" id="comment_'+id+'" name="comment_'+id+'" value="1">');
+            }else{
+                jQuery('.comments_hidden_data').html('<input type="hidden" id="comment_'+id+'" name="comment_'+id+'" value="0">');
+            }
+        });
+    });
+  }
+</script>
+<?php
+}
+add_action( 'wp_footer', 'footer_script' );
+
+// Remove the Parent products from the loop
+add_action( 'pre_get_posts', 'custom_pre_get_posts_query' );
+function custom_pre_get_posts_query( $q ) {
+	
+	$actual_link = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+
+	$display_comments = false;
+	if (preg_match('/wp-admin/', $actual_link)) {
+		if (isset($_GET['display'])) {
+			if ($_GET['display'] == "comments") {
+				$display_comments = true;
+			}
+		}
+	}
+
+	global $wpdb;
+
+	if ($display_comments) {
+		$all_ids = array();
+		$products = $wpdb->get_results( get_all_comment_list_hide_products() );
+		if ( $products )
+		{
+		    foreach ( $products as $each_product ){
+                if (metadata_exists('post', $each_product->ID, 'parent')) {
+                    //echo $each_product->ID."Exists";
+                }else{
+		    	    $all_ids[sizeof($all_ids)] = $each_product->ID;
+                }
+		 	}
+
+		    $q->set( 'post__not_in', $all_ids);
+		}
+
+	}else{
+		$products = $wpdb->get_results( get_all_comment_list() );
+		$extude_ids = array();
+
+		if ( $products )
+		{
+		    foreach ( $products as $each_product ){
+		    	$extude_ids[sizeof($extude_ids)] = $each_product->ID;
+		 	}
+		}
+		
+		$q->set( 'post__not_in', $extude_ids);
+	}
+
+}
+
+//add_menu_page( 'custom menu link', 'Comments', 'manage_options', 'paid-comments', 'wpsites_custom_menu_link', 'dashicons-format-chat', 3 ); 
+
+function register_my_custom_submenu_page() {
+    add_submenu_page( 'edit.php?post_type=product', 'Quotes', 'Quotes', 'manage_options', 'quotes', 'wpsites_custom_menu_link' ); 
+}
+add_action('admin_menu', 'register_my_custom_submenu_page',99);
+
+function wpsites_custom_menu_link(){
+    $url = get_admin_url();
+    if (!preg_match('/\/$/', $url))
+        $url = $url.'/';
+
+    $url = 'edit.php?post_type=product&display=comments';
+
+    wp_redirect( $url, 301 ); 
+    exit;
+}
+
+function my_custom_admin_head() {
+    $actual_link = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    if (preg_match('/wp-admin/', $actual_link)) {
+        if (isset($_GET['display'])) {
+            if ($_GET['display'] == "comments") {
+                ?>
+
+                <style type="text/css">
+                    #menu-posts-product ul li.wp-first-item a{ color: rgba(240,245,250,0.7)!important; font-weight: 400!important; }
+                    #menu-posts-product ul li:last-child a{ color: rgba(240,245,250,1)!important; font-weight: 800!important; }
+                </style>
+                <script type=""text/javascript">
+                    //var element = document.getElementById("menu-posts-product");
+                    //element.classList.remove("wp-has-current-submenu");
+                </script>
+
+                <?php
+            }
+        }
+    }
+}
+add_action( 'admin_head', 'my_custom_admin_head' );
+
+function vendor_reg_form_html(){
+	$return = "";
+	$return .= '<form action="" method="post" class="vendor_table">';
+
+	$return .= '<input type="text" name="vendor_name" placeholder="UserName">';
+	$return .= '<input type="email" name="vendor_email" placeholder="Email">';
+	$return .= '<input type="tel" name="vendor_phone" placeholder="Phone">';
+
+	$return .= '<hr>';
+
+	$return .= '<input type="text" name="vendor_paypal_email" placeholder="PayPal email address">';
+	$return .= '<input type="text" name="vendor_bank_account" placeholder="Bank Account (IBAN/BIC)">';
+
+	$return .= '<input type="submit" name="vendor_add_new" value="Add Vendor">';
+
+	$return .= '</form>';
+
+	return $return;
+}
+function vendor_form( $atts ) {
+	$return = "";
+
+    if (!is_user_logged_in()) {
+        return '<div class="message_box">Please login to continue.</div>';
+    }
+
+	//Check User already Inserted
+	$terms = get_terms( array(
+	    'taxonomy' => 'yith_shop_vendor',
+	    'hide_empty' => false,
+	) );
+
+	foreach ($terms as $each_term) {
+		$id = $each_term->term_id;
+		if(get_term_meta( $id, 'user_added', true ) == get_current_user_id()){
+
+			$name = $each_term->name;
+			$paypal_email = get_term_meta($id, 'paypal_email', true);
+			$registration_date = get_term_meta($id, 'registration_date', true);
+			$telephone = get_term_meta($id, 'telephone', true);
+			$store_email = get_term_meta($id, 'store_email', true);
+			$bank_account = get_term_meta($id, 'bank_account', true);
+			
+			//$return .= '<div class="message_box">Already register.</div>';
+
+			$return .= '<table class="vendor_table">';
+			$return .= 	'<tr><td>Username: </td><td>'.$name.'</td></tr>';
+			$return .= 	'<tr><td>Paypal email: </td><td>'.$paypal_email.'</td></tr>';
+			$return .= 	'<tr><td>Registration date: </td><td>'.$registration_date.'</td></tr>';
+			$return .= 	'<tr><td>Telephone: </td><td>'.$telephone.'</td></tr>';
+			$return .= 	'<tr><td>Store email: </td><td>'.$store_email.'</td></tr>';
+			$return .= 	'<tr><td>Bank account: </td><td>'.$bank_account.'</td></tr>';
+			$return .= '</table>';
+
+			return $return;	
+		}
+	}
+	//print_r($terms);
+
+	if (is_user_logged_in()){
+		if (!isset($_POST['vendor_add_new'])) {
+			$return .= vendor_reg_form_html();
+		}else{
+			// Insert Vendor	
+			if ($_POST['vendor_name'] != "" && $_POST['vendor_email'] != "" && $_POST['vendor_phone'] != "" && $_POST['vendor_paypal_email'] != "" && $_POST['vendor_bank_account'] != "") {
+				$add_Vendor = add_new_vendor();
+				if($add_Vendor > 0){
+					$return .= '<div class="message_box">New vendor added successfully.</div>';		
+				}else if($add_Vendor == -100){
+					$return .= '<div class="message_box">Vendor Already exists.</div>';		
+					$return .= vendor_reg_form_html();
+				}else{
+					$return .= '<div class="message_box">Error while adding vendor.</div>';		
+					$return .= vendor_reg_form_html();
+				}
+
+			}else{
+				$return .= '<div class="message_box">Please fill data correctly.</div>';	
+				$return .= vendor_reg_form_html();
+			}
+		}
+	}else{
+		$return .= '<div class="message_box">Please login to continue.</div>';	
+	}
+
+	return $return;
+}
+add_shortcode( 'vendor_reg_form', 'vendor_form' );
+
+//add_action( 'wp_head', 'add_new_vendor' );
+function add_new_vendor(){
+
+	$vendor_name = $_POST['vendor_name'];
+	$vendor_email = $_POST['vendor_email'];
+	$vendor_phone = $_POST['vendor_phone'];
+	$vendor_paypal_email = $_POST['vendor_paypal_email'];
+	$vendor_bank_account = $_POST['vendor_bank_account'];
+
+	$term_exists = term_exists( $vendor_name, 'yith_shop_vendor' );
+	$term_exists = $term_exists['term_id'];
+
+	if ($term_exists > 0) {
+		return -100;
+	}
+
+	$myVar = wp_insert_term(
+	  $vendor_name, // the term 
+	  'yith_shop_vendor' // the taxonomy
+	);
+
+	$term_id = $myVar['term_id'];
+
+	// Update meta
+	add_term_meta ($term_id, 'paypal_email', $vendor_paypal_email );
+	add_term_meta ($term_id, 'vat', '' );
+	add_term_meta ($term_id, 'legal_notes', '' );
+	add_term_meta ($term_id, 'enable_selling', 'yes' );
+	add_term_meta ($term_id, 'skip_review', 'yes' );
+	add_term_meta ($term_id, 'commission', 100 );
+	add_term_meta ($term_id, 'featured_products', 'no' );
+	add_term_meta ($term_id, 'registration_date', date('Y-m-d H:i:s') );
+	add_term_meta ($term_id, 'registration_date_gmt', gmdate('Y-m-d H:i:s') );
+	add_term_meta ($term_id, 'telephone', $vendor_phone );
+	add_term_meta ($term_id, 'store_email', $vendor_email );
+	add_term_meta ($term_id, 'location', '' );
+	add_term_meta ($term_id, 'avatar', '' );
+	add_term_meta ($term_id, 'header_image', '' );
+	add_term_meta ($term_id, 'socials', '' );
+	add_term_meta ($term_id, 'bank_account', $vendor_bank_account);
+	add_term_meta ($term_id, 'user_added', get_current_user_id());
+
+	return $term_id;
+}
+
+// Add comment box
+add_action( 'woocommerce_after_single_product', 'add_comment_box', 5 );
+ 
+function add_comment_box() {
+
+	//Check User already Inserted
+	$terms = get_terms( array(
+	    'taxonomy' => 'yith_shop_vendor',
+	    'hide_empty' => false,
+	) );
+
+	$add_comment_box = false;
+	foreach ($terms as $each_term) {
+		$id = $each_term->term_id;
+		if(get_term_meta( $id, 'user_added', true ) == get_current_user_id()){
+			$add_comment_box = true;
+		}
+	}
+	?>
+
+	<?php if($add_comment_box){ ?>
+		<div id="comment_box">
+			<?php //echo add_new_comment(); ?>
+			<form action="" method="post">
+				<input type="text" name="comment_name" placeholder="Comment Name">
+				<input type="number" name="comment_price" placeholder="Comment Price">
+				<input type="hidden" name="comment_parent" value="<?php echo get_the_ID(); ?>">
+				<textarea name="comment_desc" placeholder="Comment Description"></textarea>
+				<input type="submit" name="add_comment" value="Add Comment">
+			</form>
+		</div>
+	<?php }else{ ?>
+		<div id="comment_box">
+			<?php if (is_user_logged_in()) {
+				echo '<div class="warning">User must be a vendor to add comments.</div>';
+			}else{
+				//echo '<div class="warning">Please login to continue</div>';
+			}
+			?>
+		</div>
+	<?php } ?>
+
+	<?php
+}
+
+add_action( 'wp_head', function(){
+	if (isset($_POST['add_comment'])){
+		add_new_comment();
+	}	
+});
+
+function add_new_comment(){
+
+	$title = $_POST['comment_name'];
+	$price = $_POST['comment_price'];
+	$desc = $_POST['comment_desc'];
+	$parent = $_POST['comment_parent'];
+
+	$post = array(
+	    'post_author' => get_current_user_id(),
+	    'post_content' => $desc,
+	    'post_status' => "publish",
+	    'post_title' => $title,
+	    'post_parent' => '',
+	    'post_type' => "product",
+	);
+
+	//Create post
+	$post_id = wp_insert_post( $post, $wp_error = false );
+	//Get the current vendor
+	$vendor = "";
+	$terms = get_terms( array(
+	    'taxonomy' => 'yith_shop_vendor',
+	    'hide_empty' => false,
+	) );
+	
+	foreach ($terms as $each_term) {
+		$id = $each_term->term_id;
+		if(get_term_meta( $id, 'user_added', true ) == get_current_user_id()){
+			wp_set_object_terms($post_id, $id, 'yith_shop_vendor');
+		}
+	}
+
+/*
+	if($post_id){
+	    $attach_id = get_post_meta($product->parent_id, "_thumbnail_id", true);
+	    add_post_meta($post_id, '_thumbnail_id', $attach_id);
+	}
+*/
+	wp_set_object_terms( $post_id, 'Comment', 'product_cat' );
+	wp_set_object_terms($post_id, 'Comment', 'product_type');
+
+	update_post_meta( $post_id, '_visibility', 'visible' );
+	update_post_meta( $post_id, '_stock_status', 'instock');
+	update_post_meta( $post_id, 'total_sales', '0');
+	update_post_meta( $post_id, '_downloadable', 'no');
+	update_post_meta( $post_id, '_virtual', 'yes');
+	update_post_meta( $post_id, '_regular_price', $price );
+    update_post_meta( $post_id, '_price', $price );
+	update_post_meta( $post_id, '_purchase_note', "" );
+	update_post_meta( $post_id, '_featured', "no" );
+	update_post_meta( $post_id, '_weight', "" );
+	update_post_meta( $post_id, '_length', "" );
+	update_post_meta( $post_id, '_width', "" );
+	update_post_meta( $post_id, '_height', "" );
+	update_post_meta($post_id, '_sku', "");
+	update_post_meta( $post_id, '_product_attributes', array());
+	update_post_meta( $post_id, '_sale_price_dates_from', "" );
+	update_post_meta( $post_id, '_sale_price_dates_to', "" );
+	update_post_meta( $post_id, '_sold_individually', "" );
+	update_post_meta( $post_id, '_manage_stock', "no" );
+	update_post_meta( $post_id, '_backorders', "no" );
+	update_post_meta( $post_id, '_stock', "" );
+
+	update_post_meta( $post_id, 'parent', $parent );
+	update_post_meta( $post_id, '_product_image_gallery', '');
+
+}
+
+?>
