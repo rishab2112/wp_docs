@@ -1,0 +1,20 @@
+Setup ssl on AWS:
+
+$ sudo apt-get update
+$ sudo apt-get autoclean
+$ sudo mkdir /opt/bitnami/letsencrypt
+$ cd /opt/bitnami/letsencrypt
+$ sudo wget https://dl.eff.org/certbot-auto
+$ sudo chmod a+x ./certbot-auto
+$ sudo ./certbot-auto
+
+
+$ sudo ./certbot-auto certonly --webroot -w /opt/bitnami/apps/wordpress/htdocs/ -d www.example.com -d example.com
+
+$ mv /opt/bitnami/apache2/conf/server.key /opt/bitnami/apache2/conf/serverkey.old
+$ mv /opt/bitnami/apache2/conf/server.crt /opt/bitnami/apache2/conf/servercrt.old
+
+$ sudo ln -s /etc/letsencrypt/live/[DOMAIN]/fullchain.pem /opt/bitnami/apache2/conf/server.crt
+$ sudo ln -s /etc/letsencrypt/live/[DOMAIN]/privkey.pem /opt/bitnami/apache2/conf/server.key
+
+$ sudo /opt/bitnami/ctlscript.sh restart apache
