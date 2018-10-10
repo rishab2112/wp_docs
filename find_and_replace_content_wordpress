@@ -1,0 +1,331 @@
+<?php
+
+add_filter( 'sst_enqueue_parent_stylesheet', '__return_true' );
+
+/**
+ * Populates job listings in gravity form
+ *
+ * @param $form
+ *
+ * @return mixed
+ */
+function populate_jobs( $form ) {
+
+	foreach ( $form['fields'] as &$field ) {
+
+		if ( $field->type != 'select' || strpos( $field->cssClass, 'populate-jobs' ) === false ) {
+			continue;
+		}
+
+		$packages = new WP_Query( [
+			'post_status'    => 'publish',
+			'post_type'      => 'job',
+			'posts_per_page' => - 1
+		] );
+
+		$choices = [];
+
+		while ( $packages->have_posts() ):
+			$packages->the_post();
+			$choices[] = [ 'text' => get_the_title(), 'value' => strtolower( get_the_title() ) ];
+		endwhile;
+
+		$field->placeholder = 'Select Available Jobs';
+		$field->choices     = $choices;
+	}
+
+	return $form;
+}
+
+add_filter( 'gform_pre_render_17', 'populate_jobs' );
+add_filter( 'gform_pre_validation_17', 'populate_jobs' );
+add_filter( 'gform_pre_submission_filter_17', 'populate_jobs' );
+add_filter( 'gform_admin_pre_render_17', 'populate_jobs' );
+
+/**
+ * add conversion code for thank you page
+ */
+function mok_adword_webform() {
+	if ( is_page( [ 31084, 33316 ] ) ): ?>
+        <script type="text/javascript">
+            /* <![CDATA[ */
+            var google_conversion_id = 1070150182;
+            var google_conversion_language = "en";
+            var google_conversion_format = "3";
+            var google_conversion_color = "ffffff";
+            var google_conversion_label = "1IWfCJ-giVsQpuSk_gM";
+            var google_remarketing_only = false;
+            /* ]]> */
+        </script>
+        <script type="text/javascript" src="//www.googleadservices.com/pagead/conversion.js">
+        </script>
+        <noscript>
+            <div style="display:inline;">
+                <img height="1" width="1" style="border-style:none;" alt=""
+                     src="//www.googleadservices.com/pagead/conversion/1070150182/?label=1IWfCJ-giVsQpuSk_gM&amp;guid=ON&amp;script=0"/>
+            </div>
+        </noscript>
+		<?php
+	endif;
+}
+
+add_action( 'wp_footer', 'mok_adword_webform', 999 );
+add_filter( 'gform_save_field_value', 'replace_text', 10, 3 );
+function replace_text( $value, $entry, $field ) {
+    if ( $field->get_input_type() == 'textarea' ) {
+        $value = preg_replace( '/\s+/', ' ', $value);
+    }
+    return $value;
+}
+require 'helpers/helpers.php';
+/****** Gp server cron ********/
+function cron_gravity_gp_server() {
+    require 'cron/gp_cron.php';
+}
+add_action( 'gravity_gp_server', 'cron_gravity_gp_server', 10, 0 );
+function cron_gravity_gp_delete() {
+      require 'cron/gp_delete.php';
+}
+add_action( 'gravity_gp_delete', 'cron_gravity_gp_delete', 10, 0 );
+
+
+
+// Update 4 col section
+//add_action( 'init', 'update_field' );
+
+function update_field(){
+    
+    if (!isset($_GET['update'])) {
+        return;
+    }
+
+    global $prefix;
+    $pages = get_pages();
+    foreach($pages as $page) {
+        
+        //break;
+
+        $id = $page->ID;
+
+        
+        //Get max breaks
+        $max_break = 0;
+
+        for($i=1;$i<=4;$i++){
+
+            $fst_content = get_post_meta($id, $prefix.'_four_columns1_column'.$i.'_content',1);
+            $fst_content = preg_replace('/\n/', '', $fst_content);
+
+            $title = "";
+            //Find titles
+            if (preg_match('/<h1(.*?)<\/h1>/', $fst_content)) {
+                preg_match('/<h1(.*?)<\/h1>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+
+                $fst_content = str_replace($title, '', $fst_content);
+
+                if(strlen($title) > 37 && strlen($title) < 53){
+                    //one break
+                    if($max_break<=0){
+                        $max_break = 1;
+                    }
+                }else if(strlen($title) > 50){
+                    //Two breaks
+                    $max_break = 2;
+                }
+            }
+            if (preg_match('/<h2(.*?)<\/h2>/', $fst_content)) {
+                preg_match('/<h2(.*?)<\/h2>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+
+                $fst_content = str_replace($title, '', $fst_content);
+
+                if(strlen($title) > 37 && strlen($title) < 53){
+                    //one break
+                    if($max_break<=0){
+                        $max_break = 1;
+                    }
+                }else if(strlen($title) > 50){
+                    //Two breaks
+                    $max_break = 2;
+                }
+            }
+            if (preg_match('/<h3(.*?)<\/h3>/', $fst_content)) {
+                preg_match('/<h3(.*?)<\/h3>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+
+                $fst_content = str_replace($title, '', $fst_content);
+
+                if(strlen($title) > 37 && strlen($title) < 53){
+                    //one break
+                    if($max_break<=0){
+                        $max_break = 1;
+                    }
+                }else if(strlen($title) > 50){
+                    //Two breaks
+                    $max_break = 2;
+                }
+            }
+            if (preg_match('/<h4(.*?)<\/h4>/', $fst_content)) {
+                preg_match('/<h4(.*?)<\/h4>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+
+                $fst_content = str_replace($title, '', $fst_content);
+
+                if(strlen($title) > 37 && strlen($title) < 53){
+                    //one break
+                    if($max_break<=0){
+                        $max_break = 1;
+                    }
+                }else if(strlen($title) > 50){
+                    //Two breaks
+                    $max_break = 2;
+                }
+            }
+            if (preg_match('/<h5(.*?)<\/h5>/', $fst_content)) {
+                preg_match('/<h5(.*?)<\/h5>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+
+                $fst_content = str_replace($title, '', $fst_content);
+
+                if(strlen($title) > 37 && strlen($title) < 53){
+                    //one break
+                    if($max_break<=0){
+                        $max_break = 1;
+                    }
+                }else if(strlen($title) > 50){
+                    //Two breaks
+                    $max_break = 2;
+                }
+            }
+            if (preg_match('/<h3(.*?)<\/h3>/', $fst_content)) {
+                preg_match('/<h3(.*?)<\/h3>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+
+                $fst_content = str_replace($title, '', $fst_content);
+
+                if(strlen($title) > 37 && strlen($title) < 53){
+                    //one break
+                    if($max_break<=0){
+                        $max_break = 1;
+                    }
+                }else if(strlen($title) > 50){
+                    //Two breaks
+                    $max_break = 2;
+                }
+            }
+
+            if (strlen($title) < 2) 
+                continue;
+
+            // Get link
+            if (preg_match('/<a/', $title)) {
+                preg_match('/href="([^"]*)"/', $title, $link);
+                $link = str_replace('href="', '', $link[0]);
+                $link = str_replace('"', '', $link);
+            }
+            $alt = strip_tags($title);
+
+            $title = '<h3>'.trim(strip_tags($title),"\n").'</h3>';
+            $title = preg_replace('/[\x00-\x1F\x7F]/', '', $title);
+
+            $content = $title.'
+<p>
+'.rtrim(ltrim(strip_tags(str_replace('', '', $fst_content)))).'
+</p>';
+
+            update_post_meta($id, $prefix.'_four_columns1_column'.$i.'_content', $content);
+
+            //update alt
+            if (get_post_meta($id, $prefix.'_four_columns1_column'.$i.'_icon_alt',1) == "") {
+                update_post_meta($id, $prefix.'_four_columns1_column'.$i.'_icon_alt', $alt);
+            }
+
+            //update url
+            if (get_post_meta($id, $prefix.'_four_columns1_column'.$i.'_link',1) == "") {
+                update_post_meta($id, $prefix.'_four_columns1_column'.$i.'_link', $link);
+            }
+
+            if (strpos(get_post_meta($id, $prefix.'_four_columns1_column'.$i.'_link',1), 'http') >= 0) {
+                $tmp = get_post_meta($id, $prefix.'_four_columns1_column'.$i.'_link',1);
+                update_post_meta($id, $prefix.'_four_columns1_column'.$i.'_link', str_replace('https://datadestruct.staging.wpengine.com', '', $tmp));
+            }        
+
+        }
+
+
+        //for break title
+        for($i=1;$i<=4;$i++){
+
+
+            $fst_content = get_post_meta($id, $prefix.'_four_columns1_column'.$i.'_content',1);
+            $fst_content = preg_replace('/\n/', '', $fst_content);
+
+            $title = "";
+            //Find titles
+            if (preg_match('/<h1(.*?)<\/h1>/', $fst_content)) {
+                preg_match('/<h1(.*?)<\/h1>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+            }
+            if (preg_match('/<h2(.*?)<\/h2>/', $fst_content)) {
+                preg_match('/<h2(.*?)<\/h2>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+            }
+            if (preg_match('/<h3(.*?)<\/h3>/', $fst_content)) {
+                preg_match('/<h3(.*?)<\/h3>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+            }
+            if (preg_match('/<h4(.*?)<\/h4>/', $fst_content)) {
+                preg_match('/<h4(.*?)<\/h4>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+            }
+            if (preg_match('/<h5(.*?)<\/h5>/', $fst_content)) {
+                preg_match('/<h5(.*?)<\/h5>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+            }
+            if (preg_match('/<h3(.*?)<\/h3>/', $fst_content)) {
+                preg_match('/<h3(.*?)<\/h3>/', $fst_content, $tmptitle);
+                $title = $tmptitle[0];
+            }
+
+            if (strlen($title) < 2) 
+                continue;
+
+            $old_title = $title;
+
+            //Add break
+            if ($max_break == 1 ) {
+                $tmp = explode(' ', preg_replace('/\n/', '', $title));
+                if(sizeof($tmp) > 1){
+                    $tmp[sizeof($tmp)-1] = '<br>'.$tmp[sizeof($tmp)-1];
+                    $title = implode(' ', $tmp);
+                }
+            }
+            if ($max_break == 2 ) {
+                $tmp = explode(' ', preg_replace('/\n/', '', $title));
+                if(sizeof($tmp) > 2){
+                    $tmp[sizeof($tmp)-1] = '<br>'.$tmp[sizeof($tmp)-1];
+                    $tmp[sizeof($tmp)-2] = '<br>'.$tmp[sizeof($tmp)-2];
+                    $title = implode(' ', $tmp);
+                }
+            }
+
+            update_post_meta($id, $prefix.'_four_columns1_column'.$i.'_content', str_replace($old_title, $title, $fst_content));
+
+        }
+
+    }
+    
+}
+
+/*function disable_save( $maybe_empty, $postarr ) {
+    $maybe_empty = false;
+    print_r($postarr);
+
+    return $maybe_empty;
+}
+add_filter( 'wp_insert_post_empty_content', 'disable_save', 999999, 2 );*/
+
+
+
+Collapse 
