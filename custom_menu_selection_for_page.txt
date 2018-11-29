@@ -1,0 +1,113 @@
+=============== For Post Type ===============
+
+function add_custom_meta_box() {
+	add_meta_box( 'demo-meta-box', 'Choose Menu', 'custom_meta_menu_box', 'team', 'side', 'high', null );
+	add_meta_box( 'demo-meta-box', 'Choose Menu', 'custom_meta_menu_box', 'page', 'side', 'high', null );
+	add_meta_box( 'demo-meta-box', 'Choose Menu', 'custom_meta_menu_box', 'location', 'side', 'high', null );
+	add_meta_box( 'demo-meta-box', 'Choose Menu', 'custom_meta_menu_box', 'testimonials', 'side', 'high', null );
+}
+add_action( 'add_meta_boxes', 'add_custom_meta_box' );
+
+function custom_meta_menu_box( $object ) {
+	wp_nonce_field( basename( __FILE__ ), 'meta-box-nonce' );
+
+	?>
+	<div>
+		<label for="meta-box-menu">Menu</label>
+		<select name="meta-box-menu"
+				value="<?php echo $value = get_post_meta( $object->ID, 'meta-menu-dropdown', true ); ?>">
+			<option value="">Select Menu</option>
+			<?php
+			$menus = get_terms( 'nav_menu' );
+			$menus = array_combine( wp_list_pluck( $menus, 'term_id' ), wp_list_pluck( $menus, 'name' ) );
+
+			foreach ( $menus as $key => $value ) {
+				if ( $value == get_post_meta( $object->ID, 'meta-menu-dropdown', true ) ) {
+					?>
+					<option selected><?php echo $value; ?></option>
+					<?php
+				} else {
+					?>
+					<option><?php echo $value; ?></option>
+					<?php
+				}
+			}
+			?>
+		</select>
+
+
+	</div>
+	<?php
+}
+
+function wp_meta_menu_drop( $post_id ) {
+	if ( array_key_exists( 'meta-box-menu', $_POST ) ) {
+		update_post_meta(
+			$post_id,
+			'meta-menu-dropdown',
+			$_POST['meta-box-menu']
+		);
+	}
+}
+add_action( 'save_post', 'wp_meta_menu_drop' );
+
+=============== Header ===============
+
+$m_meta_menu = get_post_meta($post->ID, 'meta-menu-dropdown', true);
+
+if(isset($m_meta_menu) && (!empty($m_meta_menu))){
+	$menu = wp_nav_menu( [
+		'menu'  => $m_meta_menu,
+		'fallback_cb'     => false,
+		'menu_class'      => 'slimmenu',
+		'menu_id'         => 'main-nav',
+		'container'       => false,
+		'container_class' => false,
+		'echo'            => false,
+	] ); 
+}
+
+=============== Category ===============
+
+//add extra fields to category edit form hook
+add_action('our-team_edit_form_fields', 'extra_category_fields');
+add_action ( 'our-team_edit_form_fields', 'extra_category_fields');
+//add extra fields to category edit form callback function
+function extra_category_fields( $tag ) {    //check for existing featured ID
+    $t_id = $tag->term_id;
+    $cat_meta = get_option( "category_$t_id");
+
+    $menu_name = get_term_meta($t_id, '_menuname', true);
+
+    $list_menu = get_terms( 'nav_menu', array( 'hide_empty' => true ) );
+?>
+    <tr class="form-field">
+    <th scope="row" valign="top"><label for="extra3">Menu</label></th>
+    <td>
+                <select name="cat_menu_name" id="cat_menu_name" style="width:60%;">
+                    <option value="">-Select Menu-</option>
+                    <?php 
+                        foreach ($list_menu as $each_menu_item) {
+                            $selected = "";
+                            if ($menu_name == $each_menu_item->slug) {
+                                $selected = " selected";
+                            }
+                            echo '<option value="'.$each_menu_item->slug.'"'.$selected.'>'.$each_menu_item->name.'</option>';
+                        }
+                    ?>
+                </select><br />
+                <span class="description">Select custom menu for category page</span>
+            </td>
+    </tr>
+<?php
+
+}
+
+
+add_action ( 'edited_our-team', function() {
+
+    if ( isset( $_POST['cat_menu_name'] ) ){
+        update_term_meta( $_POST['tag_ID'], '_menuname', $_POST['cat_menu_name'] );
+    }
+
+});
