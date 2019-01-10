@@ -1,0 +1,133 @@
+<?php
+
+//https://codepen.io/srikanths/pen/wKqJPr
+
+function site_check_response() {
+ 
+    // The $_REQUEST contains all the data sent via ajax
+    if ( isset($_REQUEST) ) {
+     
+        $site_url = $_REQUEST['url'];
+         
+        //  Initiate curl
+		$ch = curl_init();
+		// Will return the response, if false it print the response
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		// Set the url
+		curl_setopt($ch, CURLOPT_URL,$site_url);
+		// Execute
+		$result=curl_exec($ch);
+		// Closing
+		curl_close($ch);
+
+		$result = json_decode($result, true);
+
+    }
+     
+    // Always die in functions echoing ajax content
+   die();
+}
+ 
+add_action( 'wp_ajax_site_checker', 'site_check_response' );
+add_action( 'wp_ajax_nopriv_site_checker', 'site_check_response' );
+
+add_action('wp_footer', 'request_site_checker');
+function request_site_checker(){
+	?>
+		<script type="text/javascript">
+
+			var jQuery_load = false;
+
+			jQuery(document).ready(function($) {
+				jQuery_load = true;
+			});
+
+			function website_checker(){
+
+				var site_url = jQuery('#site_url').val();
+				var regexp = /^(http[s]?:\/\/){0,1}(www\.){0,1}[a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,5}[\.]{0,1}/;
+				if (!regexp.test(site_url)) { 
+				    alert("Invalid URL");
+				    return false;
+				}
+
+				if(jQuery_load){
+					// This does the ajax request
+					jQuery('.loader_box').show();
+
+				    jQuery.ajax({
+				        url: '<?php echo admin_url('admin-ajax.php'); ?>', // or example_ajax_obj.ajaxurl if using on frontend
+				        data: {
+				            'action': 'site_checker',
+				            'url' : site_url
+				        },
+				        success:function(data) {
+				            //#site_checker_result
+				            console.log(data);
+				        },
+				        error: function(errorThrown){
+				            console.log(errorThrown);
+				        }
+				    });  
+				}
+
+			    return false;
+			}
+
+			function progress_change(prog){
+				jQuery( '#monitor_progress_bar .progress' ).css( "width", function() {
+			    	return jQuery( this ).attr( "aria-valuenow" ) + "%";
+			    });
+				jQuery( '#monitor_progress_bar' ).find( '.progress' ).animate( {
+					width: prog+'%'
+				}, 'slow' );
+			}
+
+			function cahnge_circle_1(prog){
+				jQuery("#counter_1").val(20);
+			}
+
+		</script>
+
+		<style type="text/css">
+			body { background: #000; color: #ccc; font-family: sans-serif; font-size: 14px; }
+			.loader { width: 30px; height: 30px; line-height: 150px; margin: 60px auto 10px auto; position: relative; box-sizing: border-box; text-align: center; z-index: 0; text-transform: uppercase;	}
+			.loader:before, .loader:after { opacity: 0; box-sizing: border-box; content: "\0020"; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 100px; border: 5px solid #9ec558ed; box-shadow: 0 0 50px #bfe086c7, inset 0 0 175px #90bd40;	}
+			.loader:after { z-index: 1; -webkit-animation: gogoloader 2s infinite 1s; }
+			.loader:before { z-index: 2; -webkit-animation: gogoloader 2s infinite; }
+			@-webkit-keyframes gogoloader { 0% { -webkit-transform: scale(0); opacity: 0; } 50% { opacity: 1; } 100% { -webkit-transform: scale(1); opacity: 0; } }
+			.custom_box_shadow{ border: 1px solid #efefef; box-shadow: 0 8px 20px rgba(0,0,0,0.01), 0 6px 6px rgba(0,0,0,0.2); background: #fff; min-height: 100px }
+			div#site_checker {margin-bottom: 30px; }
+			input#site_url {background: #fff;border: solid #e5e5e6 1px;border-radius: 2em;color: #43464b;display: block;font-size: 24px;font-weight: 300;line-height: 1.635714286em;max-height: 83px;padding: 20px 100px 20px 30px;width: 100%; }
+			div#site_checker input[type=submit] {background-color: #a0ce4e;background-image: none;border: 2px solid #9dca4e;border-radius: 2.5em;box-shadow: none;color: #fff;font-size: 16px;font-weight: 700;height: 42px;outline: none;padding: 6px 32px;position: absolute;right: 0;text-transform: uppercase;top: 0;cursor: pointer; }
+			div#site_checker textarea:focus, div#site_checker input:focus{ outline: none; }
+			div#site_checker input[type=submit]:hover { background-color: #91c13d; }
+		</style>
+	<?php
+}
+
+function monitor_form( $atts ) {
+
+	$atts = shortcode_atts( array(
+		'placeholder' => 'Enter your URL to check',
+		'button_text' => 'Analyze'
+	), $atts, 'monitor_form' );
+
+	$return = '<div id="site_checker"><form name="site_checker" action="" onsubmit="return website_checker()" method="post"><div class="col-md-9" style="margin: 0 auto; float:none "><input type="text" name="site_url" id="site_url" placeholder="'.$atts['placeholder'].'"><input type="submit" value="'.$atts['button_text'].'"></div></form></div>';
+
+	$return .= '<div id="site_checker_result">';
+		$return .= do_shortcode('[fusion_progress height="35px" text_position="on_bar" show_percentage="yes" unit="%" percentage="0" filledcolor="#8ab04c"  unfilledcolor="#f6f6f6" striped="yes" animated_stripes="yes" textcolor="#333" id="monitor_progress_bar"]Checking: [/fusion_progress]');
+		
+		//$return .= do_shortcode('<div class="col-md-4">[fusion_counters_circle id="counter_1"][fusion_counter_circle value="10" countdown="yes"]Custom Content Goes Here[/fusion_counter_circle][/fusion_counters_circle]</div>');
+		//$return .= do_shortcode('<div class="col-md-4">[fusion_counters_circle id="counter_2"][fusion_counter_circle countdown="yes"]Custom Content Goes Here[/fusion_counter_circle][/fusion_counters_circle]</div>');
+		//$return .= do_shortcode('<div class="col-md-4">[fusion_counters_circle id="counter_3"][fusion_counter_circle countdown="yes"]Custom Content Goes Here[/fusion_counter_circle][/fusion_counters_circle]</div>');
+
+		$return .= '<div class="row"><br><div id="result_1" class="col-md-12 custom_box_shadow"></div></div>';
+
+	$return .= '</div>';
+
+	$return .= '<div class="row"><div class="loader_box" style="display:none;"><div class="loader"></div><center>Loading</center></div></div>';
+
+	return $return;
+}
+add_shortcode( 'monitor_form', 'monitor_form' );
